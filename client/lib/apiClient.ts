@@ -25,6 +25,7 @@ export const API_URL =
  */
 export async function getRestaurants(): Promise<Restaurant[]> {
   const res = await fetch(`${API_URL}/api/restaurants`, { cache: 'no-store' });
+  //maybe check to see if res is ok?
   return res.json();
 }
 
@@ -33,5 +34,20 @@ export async function getRestaurants(): Promise<Restaurant[]> {
  */
 export async function getRestaurant(id: number | string): Promise<Restaurant> {
   const res = await fetch(`${API_URL}/api/restaurants/${id}`, { cache: 'no-store' });
+  return res.json();
+}
+
+export async function createRestaurant(data: Omit<Restaurant, 'id' | 'createdAt'>): Promise<Restaurant> {
+  const res = await fetch(`${API_URL}/api/restaurants`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const body = await res.json();
+    throw new Error(body.error);
+  }
+
   return res.json();
 }

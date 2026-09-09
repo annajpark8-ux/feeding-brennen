@@ -1,4 +1,5 @@
 import { getRestaurants } from '@/lib/apiClient';
+import RestaurantForm from './components/form';
 
 // Server component. Fetches restaurants on each request and renders a plain
 // list. There is no loading state, no empty state, and no error handling: if
@@ -27,6 +28,8 @@ export default async function HomePage() {
           </li>
         ))}
       </ul>
+      <h2 className="mb-4 mt-8 text-lg font-medium">Add Restaurant</h2>
+      <RestaurantForm />
     </div>
   );
 }
