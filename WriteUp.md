@@ -12,7 +12,7 @@
 
 > I built a write UI for restaurants and visits, a visits API, and a restaurant detail page showing visit and spending history. My goal was to turn the project into something the user could actually interact with and would want to interact with.
 
-> POST, PUT, and DELETE all worked, but the app itself could only read, which isn't useful. So I started with a form that creates restaurants and shows the API's validation errors in the UI. From there I tackled visits, since tracking Brennen's spending is the point of the app. I built the visits API, then a page listing a restaurant's visits alongside its total and average spend, plus a form to log one. The home page got the same treatment, with average per visit and spending over the last seven days. I left out lifetime total, which didn't seem to be very useful to the user. Restaurant cards link to the detail page, and there's a back button.
+> POST, PUT, and DELETE all worked, but the app itself could only read, which isn't useful. So I started with a form that creates restaurants and shows the API's validation errors in the UI. From there I tackled visits, since tracking Brennen's spending is the point of the app. I built the visits API, then a page listing a restaurant's visits alongside its total and average spend, plus a form to log one. The home page got the same treatment, with average per visit, spending over the last seven days, and lifetime total. Restaurant cards link to the detail page, and there's a back button.
 
 
 ## 2. What did you decide, and what did you rule out?
@@ -26,16 +26,13 @@
 > I kept ON DELETE CASCADE. Changing it meant a second migration, but I also think it's right: I don’t know why someone would delete a restaurant, but keeping its spending data seems weirder than losing it
 
 
-
 ## 3. Where did you cut corners?
 
 > Something like /restaurants/99999 returns a 404 from the API, but getRestaurant doesn't check res.ok, so the error object renders as a card with every field blank
 
-> The seven-day filter’s cutoff is built with toISOString(), so it's off in certain time zones. It's a very minor problem
-
 > I wasn’t able to make it possible to edit and delete entries from the UI because of time. The endpoints exist and work by curl but nothing in the app calls them.
 
-> Error messages are terse. "Invalid Name" doesn't tell the caller whether the problem was the type or the length.
+> Error messages are pretty brief. "Invalid Name" doesn't tell the caller whether the problem was the type or the length.
 
 > Four near-identical "optional string" checks in the validators that a small helper would be better.
 
@@ -87,7 +84,8 @@
 
 ## How I verified this
 
-> Every endpoint by curl against a running database, plus clicking through the UI by hand: adding a restaurant and a visit through the forms, confirming the stats recalculate, triggering validation errors to check they render, and navigating into a restaurant and back.
+> I verified every endpoint by curl against a running database, plus clicking through the UI by hand: adding a restaurant and a visit through the forms, confirming the stats recalculate, triggering validation errors to check they render, and navigating into a restaurant and back.
+> For the UI, I checked the result when entering a restaurant with no name, only name, non numerical rating, and rating out of range. I also checked the result when entering a visit with no date, only date, non numerical amount spent, and negative amount spent.
 
 **Part A** - the contract table in CHALLENGE.md, every row including the error
 cases:
@@ -146,4 +144,6 @@ curl -i http://localhost:3000/api/restaurants/99999/visits     # 200 + empty arr
 ## Known issues / what I'd do next
 
 > See "Where did you cut corners?" above. In short: the read helpers in apiClient.ts don't check res.ok, so an API error renders as a blank page rather than a failure. That's the first thing I'd fix.
-> I'd want to implement a way to delete and edit restaurant and visit entries. I'd also want to make the app prettier because it's kind of ugly right now. I also think the actual format and structure of the app could be a lot better.
+> The seven-day filter’s cutoff is built with toISOString(), so it's off in certain time zones. It's a very minor problem, but I'd try and find a solution.
+> I'd want to implement a way to delete and edit restaurant and visit entries. I'd also want to make the app prettier because it's kind of ugly right now, and the actual format and structure of the app could be a lot better. 
+> Some other things that I thought would've been cool to implement were a search bar to find restaurants, a separate page with all visits (newest at the top), and adding a rating field to visits, so either the rating of the restaurant is changed by avg of all the visits there, or there's a separate field for restaurants called visit_rating or something.
