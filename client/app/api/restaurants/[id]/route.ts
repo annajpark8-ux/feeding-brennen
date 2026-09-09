@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { pool } from '@/db/pool';
 import { handleError } from '@/lib/errors';
 import { toRestaurant } from '@/lib/types';
+import { validateRestaurant, parseId } from '@/lib/validation';
+
 
 type Params = { params: { id: string } };
 
@@ -11,9 +13,14 @@ type Params = { params: { id: string } };
  */
 export async function GET(_req: Request, { params }: Params) {
   try {
+    const id = parseId(params.id);
+    if (id === null) {
+      return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
+    }
+
     const { rows } = await pool.query(
       'SELECT * FROM restaurants WHERE id = $1',
-      [params.id]
+      [id]
     );
 
     if (rows.length === 0) {
@@ -21,6 +28,7 @@ export async function GET(_req: Request, { params }: Params) {
     }
 
     return NextResponse.json(toRestaurant(rows[0]));
+  
   } catch (err) {
     return handleError(err);
   }
@@ -34,7 +42,34 @@ export async function GET(_req: Request, { params }: Params) {
  * record (or 404 if it doesn't exist). Validate the body the same way POST does.
  */
 export async function PUT(_req: Request, _ctx: Params) {
-  return NextResponse.json({ error: 'Not implemented' }, { status: 501 });
+  try {
+    const body = await _req.json(); //parse _req
+    const id = parseId(_ctx.params.id);
+    if (id === null) {
+      return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
+    }
+    
+    const error = validateRestaurant(body); //check for errors
+        if (error) {
+          return NextResponse.json({ error }, { status: 400 });
+        }
+
+    const { name, cuisine, address, rating} = body; //pull out the attributes
+    const { rows } = await pool.query(
+      `UPDATE restaurants SET name = $1, cuisine = $2, address = $3, rating = $4 
+      WHERE id = $5 RETURNING *`,
+      [name, cuisine, address, rating, id]
+    );
+
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(toRestaurant(rows[0]));
+  
+  } catch (err) {
+    return handleError(err);
+  }
 }
 
 /**
@@ -49,5 +84,24 @@ export async function PUT(_req: Request, _ctx: Params) {
  * write-up.
  */
 export async function DELETE(_req: Request, _ctx: Params) {
-  return NextResponse.json({ error: 'Not implemented' }, { status: 501 });
+  try {
+    const id = parseId(_ctx.params.id);
+    if (id === null) {
+      return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
+    }
+
+    const { rows } = await pool.query(
+      `DELETE FROM restaurants WHERE id = $1 RETURNING *`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
+    }
+
+    return new NextResponse(null, { status: 204 });
+  
+  } catch (err) {
+    return handleError(err);
+  }
 }
